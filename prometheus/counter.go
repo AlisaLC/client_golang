@@ -40,7 +40,7 @@ type Counter interface {
 	// non-negative values.
 	Inc()
 	// Add adds the given value to the counter. It panics if the value is <
-	// 0.
+	//	 0.
 	Add(float64)
 }
 

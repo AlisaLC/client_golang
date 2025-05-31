@@ -258,6 +258,7 @@ type Histogram interface {
 	// https://prometheus.io/docs/practices/histograms/#count-and-sum-of-observations
 	// for details.
 	Observe(float64)
+	ObserveMany([]float64)
 }
 
 // bucketLabel is used for the label that defines the upper bound of a
@@ -765,6 +766,12 @@ func (h *histogram) Desc() *Desc {
 
 func (h *histogram) Observe(v float64) {
 	h.observe(v, h.findBucket(v))
+}
+
+func (h *histogram) ObserveMany(vs []float64) {
+	for _, v := range vs {
+		h.observe(v, h.findBucket(v))
+	}
 }
 
 // ObserveWithExemplar should not be called in a high-frequency setting

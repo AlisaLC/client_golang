@@ -62,6 +62,7 @@ type Summary interface {
 	// https://prometheus.io/docs/practices/histograms/#count-and-sum-of-observations
 	// for details.
 	Observe(float64)
+	ObserveMany([]float64)
 }
 
 var errQuantileLabelNotAllowed = fmt.Errorf(
@@ -320,6 +321,22 @@ func (s *summary) Observe(v float64) {
 	}
 }
 
+func (s *summary) ObserveMany(vs []float64) {
+	s.bufMtx.Lock()
+	defer s.bufMtx.Unlock()
+
+	for _, v := range vs {
+		now := s.now()
+		if now.After(s.hotBufExpTime) {
+			s.asyncFlush(now)
+		}
+		s.hotBuf = append(s.hotBuf, v)
+		if len(s.hotBuf) == cap(s.hotBuf) {
+			s.asyncFlush(now)
+		}
+	}
+}
+
 func (s *summary) Write(out *dto.Metric) error {
 	sum := &dto.Summary{
 		CreatedTimestamp: s.createdTs,
@@ -481,6 +498,12 @@ func (s *noObjectivesSummary) Observe(v float64) {
 	// Increment count last as we take it as a signal that the observation
 	// is complete.
 	atomic.AddUint64(&hotCounts.count, 1)
+}
+
+func (s *noObjectivesSummary) ObserveMany(vs []float64) {
+	for _, v := range vs {
+		s.Observe(v)
+	}
 }
 
 func (s *noObjectivesSummary) Write(out *dto.Metric) error {

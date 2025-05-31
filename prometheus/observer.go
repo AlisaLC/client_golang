@@ -17,6 +17,7 @@ package prometheus
 // Histogram and Summary to add observations.
 type Observer interface {
 	Observe(float64)
+	ObserveMany([]float64)
 }
 
 // The ObserverFunc type is an adapter to allow the use of ordinary
@@ -37,6 +38,13 @@ type ObserverFunc func(float64)
 // Observe calls f(value). It implements Observer.
 func (f ObserverFunc) Observe(value float64) {
 	f(value)
+}
+
+// ObserveMany calls f(value) for all the values. It implements Observer.
+func (f ObserverFunc) ObserveMany(values []float64) {
+	for _, value := range values {
+		f(value)
+	}
 }
 
 // ObserverVec is an interface implemented by `HistogramVec` and `SummaryVec`.
